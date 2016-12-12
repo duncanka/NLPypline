@@ -1,4 +1,3 @@
-from math import isnan
 import unittest
 
 from nlpypline.util.metrics import ClassificationMetrics, ConfusionMatrix

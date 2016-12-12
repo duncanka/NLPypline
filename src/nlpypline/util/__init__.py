@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import colorama
 import fcntl
 import hashlib
 import importlib
@@ -46,10 +45,6 @@ class NameDictionary(object):
         self.names_to_ids = {}
         for i, name in enumerate(ids_to_names):
             self.names_to_ids[name] = i
-
-# Add some Colorama functionality.
-for style, code in [('UNDERLINE', 4), ('BLINK', 5)]:
-    setattr(colorama.Style, style, '\033[%dm' % code)
 
 
 def recursively_list_files(path):

@@ -2,7 +2,6 @@
 Define basic NLP datatypes
 '''
 
-from bidict import bidict
 from gflags import DEFINE_bool, FLAGS, DuplicateFlagError
 import logging
 from nltk.tree import ImmutableParentedTree, Tree
