@@ -73,7 +73,9 @@ class InstancesDocumentWriter(DocumentWriter):
         self._write_instance(document, instance)
         self._file_stream.flush()
 
-    def write_all_instances(self, document, instances_getter):
+    def write_all_instances(self, document, instances_getter=None):
+        if instances_getter is None:
+            instances_getter = lambda doc: doc.sentences
         all_instances = instances_getter(document)
         for instance in all_instances:
             self.instance_complete(document, instance)
