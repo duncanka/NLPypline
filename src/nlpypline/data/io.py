@@ -21,9 +21,6 @@ try:
     DEFINE_bool('gold_parses_fallback', False,
                 'If reader_gold_parses is True, falls back to automated parse'
                 ' files instead of failing if gold parses are not found')
-    DEFINE_bool('reader_directory_recurse', False,
-                'Whether DirectoryReaders should recurse into their'
-                ' subdirectories')
 except DuplicateFlagError as e:
     logging.warn('Ignoring flag redefinitions; assuming module reload')
 
@@ -238,10 +235,11 @@ class DirectoryReader(DocumentReader):
     Reads all the Documents matching a set of regexes, using an underlying file
     reader. Thus, it will return many Documents for a single path.
     '''
-    def __init__(self, file_regexes, base_reader):
+    def __init__(self, file_regexes, base_reader, recursive=False):
         self._regexes = [re.compile(regex) for regex in file_regexes]
         self._base_reader = base_reader
         self._filenames = iter([])
+        self.recursive = recursive
 
     def open(self, dirpath):
         self.close()
@@ -249,7 +247,7 @@ class DirectoryReader(DocumentReader):
         if not os.path.isdir(dirpath):
             raise IOError("No such directory: '%s" % dirpath)
 
-        if FLAGS.reader_directory_recurse:
+        if self.recursive:
             self._filenames = recursively_list_files(dirpath)
         else:
             filenames = [os.path.join(dirpath, f) for f in os.listdir(dirpath)]
