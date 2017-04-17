@@ -225,18 +225,18 @@ class StanfordParsedSentence(object):
     def get_depth(self, token):
         return self.__depths[token.index]
 
-    def _token_is_preferred_for_head_to(self, old_token, new_token):
+    def _token_is_preferred_for_head_to(self, new_token, old_token):
         # If the depths are equal, prefer verbs/copulas over nouns, and
         # nouns over others. This helps to get the correct heads for
         # fragmented spans, such as spans that consist of an xcomp and its
         # subject, as well as a few other edge cases.
-        if self.is_clause_head(new_token):
+        if self.is_clause_head(old_token):
             return False
-        elif self.is_clause_head(old_token):
+        elif self.is_clause_head(new_token):
             return True
-        elif new_token.pos in Token.NOUN_TAGS:
-            return False
         elif old_token.pos in Token.NOUN_TAGS:
+            return False
+        elif new_token.pos in Token.NOUN_TAGS:
             return True
         else:
             return False
@@ -341,6 +341,7 @@ class StanfordParsedSentence(object):
             # A copula edge to a child also indicates a clause.
             if self.edge_labels[(token.index, edge_end_index)] == 'cop':
                 return True
+        return False
 
     def is_clause_head(self, token):
         if token.pos == 'ROOT':
