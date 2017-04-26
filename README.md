@@ -9,7 +9,7 @@ The framework depends on several Python packages, including:
  * NLTK
  * NumPy/SciPy
  * Scikit-learn
- * [pyCRFsuite](https://github.com/jakevdp/pyCRFsuite)
+ * [python-crfsuite](https://github.com/scrapinghub/python-crfsuite)
  * Cython (for `src/nlpypline/util/streams.pyx`)
  * mock
 
