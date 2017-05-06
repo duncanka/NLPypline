@@ -9,7 +9,7 @@ import numpy as np
 import re
 from scipy.sparse import lil_matrix, csr_matrix, csgraph
 
-from nlpypline.util import Enum, merge_dicts, listify
+from nlpypline.util import Enum, merge_dicts, listify, nwise
 from nlpypline.util.nltk import (collins_find_heads, nltk_tree_to_graph,
                                  is_parent_of_leaf)
 from nlpypline.util.scipy import bfs_shortest_path_costs
@@ -42,6 +42,9 @@ class SentencesDocument(Document):
     def __init__(self, filename, sentences):
         super(SentencesDocument, self).__init__(filename)
         self.sentences = sentences
+        for previous_sent, sent, next_sent in nwise(sentences):
+            sent.previous_sentence = previous_sent
+            sent.next_sentence = next_sent
 
     def __iter__(self):
         return iter(self.sentences)
@@ -51,15 +54,14 @@ class SentencesDocument(Document):
 
 
 class Annotation(object):
-    def __init__(self, sentence_offset, offsets, text, annot_id=''):
+    def __init__(self, offsets, text, annot_id=''):
         ''' offsets is a tuple or list of (start, end) tuples. '''
         self.id = annot_id
         if isinstance(offsets[0], int):
             offsets = (offsets,)
         # Sort because indices could be out of order (particularly in brat)
-        self.offsets = sorted(
-            [(start_offset - sentence_offset, end_offset - sentence_offset)
-             for (start_offset, end_offset) in offsets])
+        self.offsets = sorted([(start_offset, end_offset)
+                               for (start_offset, end_offset) in offsets])
         self.text = text
 
     def starts_before(self, other):
@@ -97,6 +99,12 @@ class Token(object):
 
     def get_gen_pos(self):
         return Token.POS_GENERAL.get(self.pos, self.pos)
+
+    def get_start_offset_doc(self):
+        return self.parent_sentence.document_char_offset + self.start_offset
+
+    def get_end_offset_doc(self):
+        return self.parent_sentence.document_char_offset + self.end_offset
 
     def __unicode__(self):
         return u"Token(%s_%d/%s [%s:%s])" % (
@@ -169,6 +177,8 @@ class StanfordParsedSentence(object):
          `util.streams.CharacterTrackingStreamWrapper`. (Built-in stream types
          will *not* work.)
         '''
+        self.next_sentence = None
+        self.previous_sentence = None
         # TODO: move much of the initialization functionality, particularly
         # aligning tokens to text, into the reader class.
         self.tokens = []

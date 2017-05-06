@@ -1,9 +1,10 @@
 from __future__ import print_function
 
+import collections
 import fcntl
 import hashlib
 import importlib
-from itertools import chain, combinations, izip, izip_longest, tee
+from itertools import chain, combinations, islice, izip, izip_longest, tee
 import numpy as np
 import os
 import struct
@@ -153,13 +154,6 @@ def print_indented(indent_level, *args, **kwargs):
             print(line, **kwargs)
 
 
-# From https://docs.python.org/2/library/itertools.html
-def pairwise(iterable):
-    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-    a, b = tee(iterable)
-    next(b, None)
-    return izip(a, b)
-
 
 # From http://stackoverflow.com/a/3010495/4044809
 def get_terminal_size():
@@ -242,6 +236,35 @@ def powerset(iterable):
     xs = list(iterable)
     # note we return an iterator rather than a list
     return chain.from_iterable(combinations(xs, n) for n in range(len(xs) + 1))
+
+
+# From https://docs.python.org/2/library/itertools.html
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return izip(a, b)
+
+
+# From https://docs.python.org/2/library/itertools.html
+def consume(iterator, n):
+    "Advance the iterator n-steps ahead. If n is none, consume entirely."
+    # Use functions that consume iterators at C speed.
+    if n is None:
+        # feed the entire iterator into a zero-length deque
+        collections.deque(iterator, maxlen=0)
+    else:
+        # advance to the empty slice starting at position n
+        next(islice(iterator, n, n), None)
+
+
+# Based on pairwise in https://docs.python.org/2/library/itertools.html#recipes
+def nwise(iterable, n=3):
+    "s -> (s0,...,sn), (s1,...,s(n+1),..."
+    iters = tee(iterable, n)
+    for i, iterator in enumerate(iters[1:]):
+        consume(iterator, i + 1)
+    return izip(*iters)
 
 
 class MinMaxRange(object):
