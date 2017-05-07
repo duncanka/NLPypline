@@ -2,6 +2,7 @@
 Define basic NLP datatypes
 '''
 
+from copy import deepcopy
 from gflags import DEFINE_bool, FLAGS, DuplicateFlagError
 import logging
 from nltk.tree import ImmutableParentedTree, Tree
@@ -42,15 +43,27 @@ class SentencesDocument(Document):
     def __init__(self, filename, sentences):
         super(SentencesDocument, self).__init__(filename)
         self.sentences = sentences
-        for previous_sent, sent, next_sent in nwise(sentences):
-            sent.previous_sentence = previous_sent
-            sent.next_sentence = next_sent
+        self.__populate_linked_list_pointers()
 
     def __iter__(self):
         return iter(self.sentences)
 
     def __getitem__(self, index):
         return self.sentences[index]
+
+    def __deepcopy__(self, memo): # Avoid massive memory and stack demands
+        for sentence in self.sentences:
+            sentence.previous_sentence = None
+            sentence.next_sentence = None
+        new_sentences = deepcopy(self.sentences, memo)
+        new_doc = SentencesDocument(self.filename, new_sentences)
+        self.__populate_linked_list_pointers()
+        return new_doc
+
+    def __populate_linked_list_pointers(self):
+        for previous_sent, sent, next_sent in nwise(self.sentences):
+            sent.previous_sentence = previous_sent
+            sent.next_sentence = next_sent
 
 
 class Annotation(object):
@@ -256,6 +269,9 @@ class StanfordParsedSentence(object):
         min_depth = np.inf
         head = None
         for token in tokens:
+            # Ignore annotation tokens from outside this sentence.
+            if token.parent_sentence is not self:
+                continue
             depth = self.get_depth(token)
             parent_of_current_head = head in self.get_children(token, '*')
             child_of_current_head = (head is not None and
@@ -283,8 +299,8 @@ class StanfordParsedSentence(object):
     def count_words_between(self, token1, token2):
         ''' Counts words between tokens based purely on the token IDs,
             discounting punctuation tokens. '''
-        # assert (self.tokens[token1.index] == token1 and
-        #        self.tokens[token2.index] == token2), "Tokens not in sentence"
+        assert (self.tokens[token1.index] == token1 and
+                self.tokens[token2.index] == token2), "Tokens not in sentence"
         switch = token1.index > token2.index
         if switch:
             token1, token2 = token2, token1
@@ -300,6 +316,9 @@ class StanfordParsedSentence(object):
         Returns a tuple (e, p), p is the parent of the given token along the
         shortest path to root, and e is the label of the edge from p to token.
         '''
+        if token.parent_sentence is not self:
+            return (None, None) # not in the parse tree
+
         # We can't use self.path_predecessors because it was computed in an
         # essentially undirected fashion. Instead, we find all parents, and
         # select the one whose directed depth is lowest (i.e., with the shortest
@@ -327,6 +346,9 @@ class StanfordParsedSentence(object):
         `edge_type` may be a single type or a list of types. The special value
         '*' indicates that all children should be returned, without edge labels.
         '''
+        if token.parent_sentence is not self:
+            return [] # not in the parse tree
+
         # Grab the sparse column of the edge matrix with the edges of this
         # token. Iterate over the edge end indices therein.
         if edge_type:
@@ -345,6 +367,9 @@ class StanfordParsedSentence(object):
                     for edge_end_index in self.edge_graph[token.index].indices]
 
     def is_copula_head(self, token):
+        if token.parent_sentence is not self:
+            return False
+
         # Grab the sparse column of the edge matrix with the edges of this
         # token, and check the labels on each non-zero edge.
         for edge_end_index in self.edge_graph[token.index].indices:
@@ -354,6 +379,9 @@ class StanfordParsedSentence(object):
         return False
 
     def is_clause_head(self, token):
+        if token.parent_sentence is not self:
+            return False
+
         if token.pos == 'ROOT':
             return False
         try:
@@ -374,6 +402,7 @@ class StanfordParsedSentence(object):
         return False
 
     def extract_dependency_path(self, source, target, include_conj=True):
+        assert source.parent_sentence is self and target.parent_sentence is self
         edges = []
         while target is not source:
             predecessor_index = self.path_predecessors[source.index,
@@ -403,11 +432,16 @@ class StanfordParsedSentence(object):
         Returns the token, along with its distance. If none of the possible
         targets is reachable, returns (None, np.inf).
         '''
+        if source.parent_sentence is not self:
+            return (None, np.inf)
+
         if not possible_targets:
             raise ValueError("Can't find closest of 0 tokens")
 
         min_distance = np.inf
         for target in possible_targets:
+            if target.parent_sentence is not self:
+                continue
             if use_tree:
                 next_distance = self.path_costs[source.index, target.index]
             else:
@@ -423,7 +457,8 @@ class StanfordParsedSentence(object):
     def get_constituency_node_for_tokens(self, tokens):
         # Token indices include ROOT, so we subtract 1 to get indices that will
         # match NLTK's leaf indices.
-        indices = [token.index - 1 for token in tokens]
+        indices = [token.index - 1 for token in tokens
+                   if token.parent_sentence is self]
         try:
             treeposition = self.constituency_tree.treeposition_spanning_leaves(
                 min(indices), max(indices) + 1) # +1 b/c of Python-style ranges
@@ -479,9 +514,12 @@ class StanfordParsedSentence(object):
     @staticmethod
     def is_contiguous(tokens):
         last_index = tokens[0].index
+        sentence = tokens[0].parent_sentence
         for token in tokens[1:]:
-            if token.pos in Token.PUNCT_TAGS or token.index == last_index + 1:
+            if sentence is token.parent_sentence and (
+                token.pos in Token.PUNCT_TAGS or token.index == last_index + 1):
                 last_index = token.index
+                sentence = token.parent_sentence
             else:
                 return False
 
