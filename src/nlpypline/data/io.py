@@ -8,7 +8,7 @@ import re
 
 from nlpypline.data import StanfordParsedSentence, SentencesDocument
 from nlpypline.util import recursively_list_files
-from nlpypline.util.streams import (read_stream_until,
+from nlpypline.util.streams import (read_stream_until, peek_and_revert_unless,
                                     CharacterTrackingStreamWrapper)
 
 
@@ -189,11 +189,15 @@ class StanfordParsedSentenceReader(DocumentReader):
             self.__skip_tokens(tokenized, 'Ignoring unparsed sentence')
             return self.get_next()
 
-        constituency_parse, double_newline_found = read_stream_until(
-            self._parse_file, '\n\n')
-        assert double_newline_found, (
-            'Invalid parse file: expected blank line after constituency parse: %s'
-            % constituency_parse).encode('ascii', 'replace')
+        # Process the constituency parse, if present.
+        if peek_and_revert_unless(self._parse_file, lambda x: False)[0] == '(':
+            constituency_parse, double_newline_found = read_stream_until(
+                self._parse_file, '\n\n')
+            assert double_newline_found, (
+                'Invalid parse file: expected blank line after constituency parse: %s'
+                % constituency_parse).encode('ascii', 'replace')
+        else:
+            constituency_parse = None
 
         parse_lines = []
         tmp = self._parse_file.readline().strip()
