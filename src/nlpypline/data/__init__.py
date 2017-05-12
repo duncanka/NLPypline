@@ -278,7 +278,9 @@ class StanfordParsedSentence(object):
         head = None
         for token in tokens:
             # Ignore annotation tokens from outside this sentence.
-            if token.parent_sentence is not self:
+            # Really this check should be an is, but we use != to make it work
+            # on Frozen sentences.
+            if token.parent_sentence != self:
                 continue
             depth = self.get_depth(token)
             parent_of_current_head = head in self.get_children(token, '*')
