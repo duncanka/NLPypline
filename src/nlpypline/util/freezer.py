@@ -25,7 +25,8 @@ class Frozen(object):
     def __init__(self, value, recursive=True):
         '''
         `value`: the object to wrap.
-        `recursive`: whether all attributes, members, etc. accessed through
+        `recursive`: whether all attributes, members, etc. accessed through the
+                     frozen object should also be frozen
         '''
         # Circumvent our overridden __setattr__ function.
         object.__setattr__(self, '_value', value)
@@ -41,8 +42,9 @@ class Frozen(object):
 
     def __getitem__(self, i):
         _value = object.__getattribute__(self, '_value')
+        _recursive = object.__getattribute__(self, '_recursive')
         try:
-            return _value.__getitem__(i)
+            return Frozen._freeze_if_needed(_value.__getitem__(i), _recursive)
         except AttributeError: # Assume this was a slice on a built-in object.
             return _value.__getslice__(i.start, i.stop)
 
@@ -69,7 +71,7 @@ class Frozen(object):
     def __unicode__(self):
         _value = object.__getattribute__(self, '_value')
         return u'Frozen(%s)' % unicode(_value)
-    
+
     ### Misc methods that need special care ###
     def __reversed__(self):
         _value = object.__getattribute__(self, '_value')
@@ -78,7 +80,7 @@ class Frozen(object):
         if _recursive:
             val_reversed = freeze(val_reversed)
         return val_reversed
-    
+
     def __coerce__(self, other):
         _value = object.__getattribute__(self, '_value')
         coerced = _value.__coerce__(other)
@@ -88,7 +90,7 @@ class Frozen(object):
         _recursive = object.__getattribute__(self, '_recursive')
         coerced_self = self._freeze_if_needed(coerced_self, _recursive)
         return (coerced_self, coerced_other)
-    
+
     def __cmp__(self, other):
         # Some builtins don't have __cmp__ defined, even though they can be used
         # with cmp().
@@ -159,7 +161,7 @@ class Frozen(object):
         raise FrozenError("Can't modify frozen object {0}".format(_value))
 
     @staticmethod
-    def _get_legal_method(method_name):        
+    def _get_legal_method(method_name):
         def _legal_method(self, *args, **kwargs):
             _value = object.__getattribute__(self, '_value')
             underlying_method = getattr(_value, method_name)
@@ -176,7 +178,7 @@ class Frozen(object):
                 return NotImplemented
             return underlying_method(*args, **kwargs)
         return _reflected_method
-    
+
     @staticmethod
     def _get_unary_method(method_name):
         def _unary_method(self, *args, **kwargs):
