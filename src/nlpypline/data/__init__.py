@@ -52,12 +52,10 @@ class SentencesDocument(Document):
         return self.sentences[index]
 
     def __deepcopy__(self, memo): # Avoid massive memory and stack demands
-        for sentence in self.sentences:
-            sentence.previous_sentence = None
-            sentence.next_sentence = None
         new_sentences = deepcopy(self.sentences, memo)
+        memo[id(self.sentences)] = new_sentences
         new_doc = SentencesDocument(self.filename, new_sentences)
-        self.__populate_linked_list_pointers()
+        memo[id(self)] = new_doc
         return new_doc
 
     def __populate_linked_list_pointers(self):
@@ -225,6 +223,16 @@ class StanfordParsedSentence(object):
             self.constituency_tree = None
             self.constituency_graph = None
             self.constituent_heads = None
+
+    def __deepcopy__(self, memo): # Avoid massive memory and stack demands
+        next_sent, prev_sent = self.next_sentence, self.previous_sentence
+        self.next_sentence, self.previous_sentence = None, None
+        copied = self.__class__.__new__(self.__class__)
+        memo[id(self)] = copied
+        for k, v in self.__dict__.items():
+            setattr(copied, k, deepcopy(v, memo))
+        self.next_sentence, self.previous_sentence = next_sent, prev_sent
+        return copied
 
     @staticmethod
     def unescape_token_text(token_text):
