@@ -545,7 +545,7 @@ class SimpleStage(Stage):
     A stage that simply runs an operation on each instance, with the operation
     encapsulated as a single function. The function should be entirely
     self-contained; its return value will be ignored.
-    
+
     If instances other than the default are required, this stage should be
     overridden with an appropriate _extract_instances function.
     '''
