@@ -238,7 +238,7 @@ def powerset(iterable):
     return chain.from_iterable(combinations(xs, n) for n in range(len(xs) + 1))
 
 
-# From https://docs.python.org/2/library/itertools.html
+# From https://docs.python.org/2/library/itertools.html#recipes
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
     a, b = tee(iterable)
