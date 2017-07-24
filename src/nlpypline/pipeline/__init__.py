@@ -195,7 +195,7 @@ class Pipeline(object):
         if isinstance(results, dict): # special case: treat as named sub-metrics
             for result_name, result in results.items():
                 print_indented(indent_baseline, result_name, ':', sep='')
-                print_indented(indent_baseline + 1, str(result))
+                Pipeline.print_stage_results(indent_baseline + 1, result)
         else:
             print_indented(indent_baseline, results)
 
@@ -425,7 +425,7 @@ class Evaluator(object):
         Should return the evaluation results for this stage, incorporating the
         results of all calls to self.evaluate. If a dict is returned, it will
         be treated as a collection of named result metrics, where each key
-        indicates the name of the corresponding metric.
+        indicates the name of the corresponding metric (dict may be recursive).
         '''
         raise NotImplementedError
 
