@@ -1,5 +1,6 @@
 """ Define basic pipeline functionality. """
 
+import ast
 from copy import deepcopy
 from gflags import (DEFINE_list, DEFINE_boolean, DEFINE_integer, FLAGS,
                     DuplicateFlagError, DEFINE_string, FlagsError)
@@ -56,6 +57,10 @@ try:
                    ' next stage realistic input), evaluation results will be'
                    ' printed if this stage is true. Causes all stages to'
                    ' default to being tested at train time on training data.')
+    DEFINE_string('cv_debug_fold_indices', '',
+                  'Python list of lists of fold sentence indices, in order'
+                  ' (assumes instances are sorted). Useful for comparing CV'
+                  ' results with other systems.')
 except DuplicateFlagError as e:
     logging.warn('Ignoring flag redefinitions; assuming module reload')
 
@@ -141,10 +146,22 @@ class Pipeline(object):
             all_instances = list(itertools.chain(*[d.sentences
                                                    for d in documents]))
             print len(all_instances), "instances"
-            np.random.shuffle(all_instances)
-            if num_folds <= 0:
-                num_folds = len(all_instances)
-            sentence_folds = partition(all_instances, num_folds)
+
+            if FLAGS.cv_debug_fold_indices:
+                fold_indices = ast.literal_eval(FLAGS.cv_debug_fold_indices)
+                assert num_folds == len(fold_indices)
+                # Alphabetize sentences by full sentence string
+                all_instances.sort(
+                    key=lambda inst: ' '.join([t.original_text
+                                               for t in inst.tokens]))
+                sentence_folds = ([[all_instances[i] for i in sentence_indices]
+                                   for sentence_indices in fold_indices])
+            else:
+                np.random.shuffle(all_instances)
+                if num_folds <= 0:
+                    num_folds = len(all_instances)
+                sentence_folds = partition(all_instances, num_folds)
+
             folds = [[SentencesDocument('fold%d' % i, sentences)]
                      for i, sentences in enumerate(sentence_folds)]
         else:
