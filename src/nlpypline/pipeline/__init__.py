@@ -151,9 +151,12 @@ class Pipeline(object):
                 fold_indices = ast.literal_eval(FLAGS.cv_debug_fold_indices)
                 assert num_folds == len(fold_indices)
                 # Alphabetize sentences by full sentence string
-                all_instances.sort(
-                    key=lambda inst: ' '.join([t.original_text
-                                               for t in inst.tokens]))
+                alph_sort_key = lambda sent: ' '.join(
+                    # Canonicalize all quotes
+                    [t.original_text.replace('``', '"').replace("''", '"')
+                     for t in sent.tokens[1:]])
+                all_instances.sort(key=alph_sort_key)
+
                 sentence_folds = ([[all_instances[i] for i in sentence_indices]
                                    for sentence_indices in fold_indices])
             else:
