@@ -103,7 +103,7 @@ class ClassificationMetrics(object):
     @staticmethod
     def average(metrics_list, ignore_nans=True):
         '''
-        Averaging produces a technically non-sensical ClassificationMetrics
+        Averaging produces a technically nonsensical ClassificationMetrics
         object: the usual relationships do not hold between the properties.
         To get around this, we manually modify the underlying attributes, then
         reassure the object that it's been finalized.
@@ -125,7 +125,7 @@ class ClassificationMetrics(object):
             if property_name in ['tn', 'accuracy'] and not values:
                 attr_val = np.nan
             else:
-                attr_val = safe_divide(sum(values), len(values))
+                attr_val = FloatWithStddev.from_list(values)
             setattr(avg, underlying_property_name, attr_val)
 
         avg._finalized = True
@@ -193,7 +193,7 @@ class ConfusionMatrix(confusionmatrix.ConfusionMatrix):
         super(ConfusionMatrix, self).__init__(*args, **kwargs)
         self._confusion = np.array(self._confusion)
         self.class_names = self._values
-        
+
     def __add__(self, other):
         # Deal with the possibility of an empty matrix.
         if self._confusion.shape[0] == 0:
@@ -204,7 +204,7 @@ class ConfusionMatrix(confusionmatrix.ConfusionMatrix):
         # First, create the merged labels list, and figure out what columns
         # we'll need to insert in the respective matrices.
         # Because we've disabled sort by count, _values is already sorted in
-        # alphabetical order. 
+        # alphabetical order.
         i = 0
         j = 0
         self_cols_to_add = [0 for _ in range(len(self._values) + 1)]
@@ -247,7 +247,7 @@ class ConfusionMatrix(confusionmatrix.ConfusionMatrix):
         new_matrix._correct = self._correct + other._correct
 
         return new_matrix
-    
+
     def __radd__(self, other):
         return other.__add__(self)
 
@@ -343,9 +343,12 @@ class AccuracyMetrics(object):
     @staticmethod
     def average(metrics):
         new_metrics = object.__new__(AccuracyMetrics)
-        new_metrics.correct = np.mean([m.correct for m in metrics])
-        new_metrics.incorrect = np.mean([m.incorrect for m in metrics])
-        new_metrics.accuracy = np.mean([m.accuracy for m in metrics])
+        new_metrics.correct = FloatWithStddev.from_list(
+            [m.correct for m in metrics])
+        new_metrics.incorrect = FloatWithStddev.from_list(
+            [m.incorrect for m in metrics])
+        new_metrics.accuracy = FloatWithStddev.from_list(
+            [m.accuracy for m in metrics])
         return new_metrics
 
     def __eq__(self, other):
@@ -358,3 +361,26 @@ class AccuracyMetrics(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+
+class FloatWithStddev(float):
+    def __new__(cls, value, stddev=0.0):
+        return float.__new__(cls, value)
+
+    def __init__(self, value, stddev=0.0):
+        super(FloatWithStddev, self).__init__()
+        self.stddev = float(stddev)
+
+    def __repr__(self):
+        return ''.join([float.__str__(self), ' +/- ',
+                        float.__str__(self.stddev)])
+
+    def __str__(self):
+        return unicode(self).encode('utf8')
+
+    def __unicode__(self):
+        return u''.join([float.__str__(self), u'\u00b1', # +/-
+                         float.__str__(self.stddev)])
+
+    @staticmethod
+    def from_list(lst):
+        return FloatWithStddev(np.mean(lst), np.std(lst))
