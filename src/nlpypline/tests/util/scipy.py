@@ -7,12 +7,12 @@ from sklearn.dummy import DummyClassifier
 from sklearn.metrics.classification import accuracy_score
 import unittest
 
+from nlpypline.tests import NumpyAwareTestCase
 from nlpypline.util.scipy import (
     add_rows_and_cols_to_matrix, CycleError, dreyfus_wagner,
     get_incoming_indices, get_outgoing_indices, longest_path_in_tree,
     tarjan_topological_sort, UnconnectedNodesError,
     AutoWeightedVotingClassifier)
-from tests import NumpyAwareTestCase
 
 
 class MatrixInsertionTest(NumpyAwareTestCase):

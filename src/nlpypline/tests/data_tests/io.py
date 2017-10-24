@@ -4,7 +4,7 @@ from mock import patch, DEFAULT, call
 import unittest
 
 from nlpypline.data.io import DocumentReader, StanfordParsedSentenceReader
-from tests import get_documents_from_file
+from nlpypline.tests import get_documents_from_file
 
 
 class DocumentReaderTest(unittest.TestCase):

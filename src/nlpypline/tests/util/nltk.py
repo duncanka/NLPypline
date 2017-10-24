@@ -3,8 +3,8 @@ from nltk.tree import ImmutableParentedTree, ParentedTree
 from numpy import zeros
 import unittest
 
+from nlpypline.tests import NumpyAwareTestCase
 from nlpypline.util.nltk import nltk_tree_to_graph, get_head, collins_find_heads
-from tests import NumpyAwareTestCase
 
 
 class GraphConversionTest(NumpyAwareTestCase):

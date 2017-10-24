@@ -4,7 +4,7 @@ import unittest
 
 from nlpypline.data import StanfordParsedSentence
 from nlpypline.data.io import StanfordParsedSentenceReader
-from tests import get_sentences_from_file
+from nlpypline.tests import get_sentences_from_file
 
 
 class HeadFindingTests(unittest.TestCase):
