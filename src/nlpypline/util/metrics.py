@@ -72,21 +72,21 @@ class ClassificationMetrics(object):
             self._finalize_counts()
 
         if FLAGS.metrics_log_raw_counts:
-            return ('TP: %g\n'
-                    'TN: %g\n'
-                    'FP: %g\n'
-                    'FN: %g\n'
-                    'Accuracy: %g\n'
-                    'Precision: %g\n'
-                    'Recall: %g\n'
-                    'F1: %g') % (
+            return ('TP: {:g}\n'
+                    'TN: {:g}\n'
+                    'FP: {:g}\n'
+                    'FN: {:g}\n'
+                    'Accuracy: {:g}\n'
+                    'Precision: {:g}\n'
+                    'Recall: {:g}\n'
+                    'F1: {:g}').format(
                         self._tp, self._tn, self._fp, self._fn, self._accuracy,
                         self._precision, self._recall, self._f1)
         else:
-            return ('Accuracy: %g\n'
-                    'Precision: %g\n'
-                    'Recall: %g\n'
-                    'F1: %g') % (
+            return ('Accuracy: {:g}\n'
+                    'Precision: {:g}\n'
+                    'Recall: {:g}\n'
+                    'F1: {:g}').format(
                         self._accuracy, self._precision, self._recall,
                         self._f1)
 
@@ -371,15 +371,22 @@ class FloatWithStddev(float):
         self.stddev = float(stddev)
 
     def __repr__(self):
-        return ''.join([float.__str__(self), ' +/- ',
-                        float.__str__(self.stddev)])
+        return '{:} +/- {:}'.format(float(self), self.stddev)
 
     def __str__(self):
         return unicode(self).encode('utf8')
 
     def __unicode__(self):
-        return u''.join([float.__str__(self), u'\u00b1', # +/-
-                         float.__str__(self.stddev)])
+        return u'{:}'.format(self)
+
+    def __format__(self, format_spec):
+        full_format_spec = u'{{:{:}}}\u00b1{{:{:}}}'.format( # Add +/- between
+            format_spec, format_spec)
+        formatted = full_format_spec.format(float(self), self.stddev)
+        if isinstance(format_spec, unicode):
+            return formatted
+        else:
+            return formatted.encode('utf8')
 
     @staticmethod
     def from_list(lst):
