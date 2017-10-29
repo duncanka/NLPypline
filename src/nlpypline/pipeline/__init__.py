@@ -122,7 +122,7 @@ class Pipeline(object):
     def weight_doc_by_sentences(document): # a common document weight function
         return len(document.sentences)
 
-    def cross_validate(self):
+    def cross_validate(self, on_new_fold=lambda fold_num: None):
         '''
         Returns a list of results, organized by stage. Results are also saved in
         self.eval_results. Results are aggregated across all folds using the
@@ -177,6 +177,7 @@ class Pipeline(object):
 
         for i, fold in list(enumerate(folds))[FLAGS.cv_debug_start_at - 1:]:
             print "Beginning fold", i + 1, 'of', num_folds
+            on_new_fold(i)
             testing = fold
             training = list(itertools.chain(
                 *[f for f in folds if f is not fold]))
