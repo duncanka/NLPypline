@@ -585,7 +585,8 @@ class StanfordParsedSentence(object):
             # Detect duplicated tokens.
             if (lemma == '.' and pos == '.'
                     # Previous token is in self.tokens[i], not i-1: root is 0.
-                    and self.tokens[i].original_text.endswith('.')):
+                    and self.tokens[i].original_text.endswith('.')
+                    and self.tokens[i].original_text not in ['...', '. . .']):
                 new_token.is_absent = True
 
             copy_node_indices[i + 1] = [new_token.index]
