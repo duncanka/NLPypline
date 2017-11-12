@@ -62,6 +62,11 @@ class SentencesDocument(Document):
         for previous_sent, sent, next_sent in nwise(self.sentences):
             sent.previous_sentence = previous_sent
             sent.next_sentence = next_sent
+        # Populate the initial and final sentences' neighbors, which won't ever
+        # be the middle element in the above iteration.
+        if len(self.sentences) > 1:
+            self.sentences[0].next_sentence = self.sentences[1]
+            self.sentences[-1].previous_sentence = self.sentences[-2]
 
 
 class Annotation(object):
