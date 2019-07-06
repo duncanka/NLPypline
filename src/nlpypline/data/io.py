@@ -161,6 +161,8 @@ class StanfordParsedSentenceReader(DocumentReader):
             return None
 
     def get_next_sentence(self):
+        if not self._parse_file:
+            return None
         # Read the next 3 blocks of the parse file.
         tokenized = self._parse_file.readline()
         if not tokenized: # empty string means we've hit the end of the file

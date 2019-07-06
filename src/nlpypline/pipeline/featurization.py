@@ -10,7 +10,6 @@ import time
 
 from nlpypline.util import (Enum, NameDictionary, get_object_by_fqname,
                             merge_dicts)
-from pandas.core.algorithms import isin
 
 try:
     DEFINE_string('conjoined_feature_sep', ':',
